@@ -39,6 +39,7 @@
  (fn [[params all-tokens symbol chain on-completed masked-password]]
    (case symbol
      :ETH (send-ethers params on-completed masked-password)
+     :STT (send-ethers params on-completed masked-password)
      (send-tokens all-tokens symbol chain params on-completed masked-password))))
 
 (re-frame/reg-fx

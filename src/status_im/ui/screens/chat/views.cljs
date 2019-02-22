@@ -4,6 +4,8 @@
             [status-im.contact.db :as contact.db]
             [status-im.group-chats.db :as group-chats.db]
             [status-im.i18n :as i18n]
+            [taoensso.timbre :as log]
+            [status-im.ui.screens.chat.photos :as photos]
             [status-im.ui.components.animation :as animation]
             [status-im.ui.components.button.view :as buttons]
             [status-im.ui.components.chat-icon.screen :as chat-icon.screen]
@@ -26,6 +28,8 @@
             [status-im.ui.screens.chat.styles.main :as style]
             [status-im.ui.screens.chat.toolbar-content :as toolbar-content]
             [status-im.utils.platform :as platform]
+            [status-im.tribute-to-talk.core :as tribute-to-talk]
+            [status-im.ui.screens.profile.tribute-to-talk.views :as tribute-to-talk.views]
             [status-im.utils.utils :as utils])
   (:require-macros [status-im.utils.views :refer [defview letsubs]]))
 
@@ -130,6 +134,68 @@
                    (react/dismiss-keyboard!))}
       [react/animated-view {:style (style/message-view-animated opacity)}
        message-view]]]))
+
+(defn empty-chat-container
+  []
+  [react/view style/empty-chat-container
+   [react/text {:style style/empty-chat-text}
+    (i18n/label :t/empty-chat-description)]])
+
+(defn empty-chat-container-one-to-one
+  [{:keys [chat-id name contact]} tribute-paid?]
+  (let [system-tags (or (:system-tags contact) #{})
+        tribute (:tribute contact)]
+    [react/view
+     [react/view (assoc (dissoc style/empty-chat-container :flex)
+                        :justify-content :flex-end)
+      (cond (and (nil? tribute) (not (system-tags :contact/added))
+                 (not tribute-paid?))
+            [react/view {:style {:align-items :center :justify-content :flex-end}}
+             [photos/member-photo chat-id 120]
+             [react/view {:style {:flex-direction :row :justify-content :center}}
+              [react/text {:style style/loading-text}
+               (i18n/label :t/loading)]
+              [react/activity-indicator {:color colors/gray
+                                         :animating true}]]]
+
+            (and (pos? tribute) (not (system-tags :contact/added))
+                 (not tribute-paid?))
+            [react/view {:style {:align-items :center :justify-content :flex-end}}
+             [photos/member-photo chat-id 120]
+             [react/nested-text {:style (assoc style/empty-chat-text :margin-top 24)}
+              [{:style (assoc style/empty-chat-text :margin-top 24)}
+               (i18n/label :t/tribute-required-by-account {:account-name name})]
+              [{:style {:color colors/blue}
+                :on-press #(re-frame/dispatch [:navigate-to :tribute-learn-more])}
+               (str " " (i18n/label :learn-more))]]]
+
+            :else
+            [react/view [vector-icons/icon :tiny-icons/tiny-lock]
+             [react/nested-text {:style style/empty-chat-text}
+              [{:style style/empty-chat-container-one-to-one}
+               (i18n/label :t/empty-chat-description-one-to-one)]
+              [{:style style/empty-chat-text-name} name]]])]
+     (when (and (pos? tribute)
+                (not (system-tags :contact/added))
+                (not tribute-paid?))
+       [react/view {:style {:align-items :flex-start
+                            :margin-top 32
+                            :margin-left 8}}
+        ;; TODO Fiat value still hardcoded
+        [tribute-to-talk.views/pay-to-chat-message
+         {:snt-amount tribute
+          :fiat-amount "5.23"
+          :fiat-currency "USD"
+          :public-key chat-id
+          :tribute-status (tribute-to-talk/tribute-status contact)}]
+        [react/view {:style style/are-you-friends-bubble}
+         [react/text {:style (assoc style/are-you-friends-text :font-weight "500")}
+          (i18n/label :t/tribute-to-talk-are-you-friends)]
+         [react/text {:style style/are-you-friends-text}
+          (i18n/label :t/tribute-to-talk-ask-to-be-added)]
+         [react/text {:style style/share-my-profile
+                      :on-press #(re-frame/dispatch [:profile/share-profile-link chat-id])}
+          (i18n/label :t/share-my-profile)]]])]))
 
 (defn join-chat-button [chat-id]
   [buttons/secondary-button {:style style/join-button
@@ -248,9 +314,11 @@
              [{} intro-name]])]]))))
 
 (defview messages-view
-  [{:keys [group-chat chat-id pending-invite-inviter-name] :as chat}
+  [{:keys [group-chat chat-id pending-invite-inviter-name contact] :as chat}
    modal?]
   (letsubs [messages           [:chats/current-chat-messages-stream]
+            photo-path         [:chats/photo-path chat-id]
+            tribute-paid?      [:chats/tribute-paid?]
             current-public-key [:account/public-key]]
     {:component-did-mount
      (fn [args]
@@ -280,9 +348,13 @@
         [list/flat-list (merge flat-list-conf group-header)]
         [list/flat-list flat-list-conf]))))
 
-(defn show-input-container? [my-public-key current-chat]
-  (or (not (models.chat/group-chat? current-chat))
-      (group-chats.db/joined? my-public-key current-chat)))
+(defn show-input-container? [my-public-key {:keys [contact] :as current-chat} tribute-paid?]
+  (and (or (or (models.chat/multi-user-chat? current-chat)
+               (zero? (:tribute contact)))
+           (contains? (:system-tags contact) :contact/added)
+           tribute-paid?)
+       (or (not (models.chat/group-chat? current-chat))
+           (group-chats.db/joined? my-public-key current-chat))))
 
 (defview chat-root [modal?]
   (letsubs [{:keys [public? chat-id] :as current-chat} [:chats/current-chat]
@@ -290,6 +362,7 @@
             my-public-key                              [:account/public-key]
             show-bottom-info?                          [:chats/current-chat-ui-prop :show-bottom-info?]
             show-message-options?                      [:chats/current-chat-ui-prop :show-message-options?]
+            tribute-paid?                      [:chats/tribute-paid?]
             show-stickers?                             [:chats/current-chat-ui-prop :show-stickers?]]
     ;; this check of current-chat-id is necessary only because in a fresh public chat creation sometimes
     ;; this component renders before current-chat-id is set to current chat-id. Hence further down in sub
@@ -309,7 +382,7 @@
         [chat-toolbar current-chat public? modal?]
         [messages-view-animation
          [messages-view current-chat modal?]]
-        (when (show-input-container? my-public-key current-chat)
+        (when (show-input-container? my-public-key current-chat tribute-paid?)
           [input/container])
         (when show-stickers?
           [stickers/stickers-view])

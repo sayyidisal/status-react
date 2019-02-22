@@ -68,7 +68,7 @@
 (defn item-primary
   ([s] (item-primary nil s))
   ([{:keys [style] :as props} s]
-   [react/text (merge {:style styles/primary-text}
+   [react/text (merge {:style (merge styles/primary-text style)}
                       (dissoc props :style))
     s]))
 
@@ -80,8 +80,12 @@
     s]))
 
 (defn item-secondary
-  [secondary]
-  [react/text {:style styles/secondary-text :ellipsize-mode :middle :number-of-lines 1} secondary])
+  [{:keys [style]} s]
+  [react/text
+   {:style           (merge styles/secondary-text style)
+    :ellipsize-mode  :middle
+    :number-of-lines 1}
+   s])
 
 (defn item-content
   [& children]
@@ -247,8 +251,8 @@
           {:sections            (clj->js (map wrap-per-section-render-fn sections))
            :renderSectionHeader (wrap-render-section-header-fn render-section-header-fn)})])
 
-(defn render-action [{:keys [label accessibility-label icon action disabled?]}
-                     {:keys [action-style action-label-style icon-opts]}]
+(defn render-action [{:keys [label subtext accessibility-label icon action disabled?]}
+                     {:keys [action-style action-label-style action-subtext-style icon-opts]}]
   [react/touchable-highlight {:on-press action}
    [react/view {:accessibility-label accessibility-label}
     [item
@@ -259,10 +263,21 @@
                  :icon-opts (merge {:color :white}
                                    icon-opts
                                    (when disabled? {:color colors/gray}))}]
-     [item-primary-only {:style (merge styles/action-label
-                                       action-label-style
+     (if-not subtext
+       [item-primary-only {:style (merge styles/action-label
+                                         (action-label-style false)
+                                         (when disabled? styles/action-label-disabled))}
+        label]
+       [item-content
+        [item-primary {:style (merge styles/action-label
+                                     (action-label-style true)
+                                     (when disabled? styles/action-label-disabled))}
+         label]
+        [item-secondary {:style (merge styles/action-label
+                                       action-subtext-style
                                        (when disabled? styles/action-label-disabled))}
-      label]
+         subtext]])
+
      item-icon-forward]]])
 
 (defn action-list [actions {:keys [container-style action-separator-style] :as styles}]

@@ -231,11 +231,18 @@
 (def pay-to-chat-container
   {:justify-content :center
    :align-items     :center
+   :flex-direction  :row
    :height          44})
 
 (def pay-to-chat-text
   {:typography :main-medium
    :color      colors/blue})
+
+(defn payment-status-icon [pending?]
+  {:width 24
+   :height 24
+   :border-radius 12
+   :background-color (if pending? colors/blue colors/green)})
 
 (def edit-container
   {:justify-content :space-between

@@ -6,6 +6,7 @@
             [status-im.chat.constants :as chat.constants]
             [status-im.chat.db :as chat.db]
             [status-im.models.transactions :as transactions]
+            [status-im.tribute-to-talk.core :as tribute-to-talk]
             [status-im.utils.platform :as platform]
             [status-im.utils.universal-links.core :as links]
             [status-im.ui.components.bottom-bar.styles :as tabs.styles]
@@ -304,3 +305,10 @@
  :<- [:chats/current-chat]
  (fn [{:keys [metadata messages]}]
    (get messages (get-in metadata [:responding-to-message :message-id]))))
+
+(re-frame/reg-sub
+ :chats/tribute-paid?
+ :<- [:chats/current-chat]
+ :<- [:wallet.transactions/transactions]
+ (fn [[{:keys [contact] :as chat} transactions]]
+   (tribute-to-talk/tribute-paid? contact transactions)))
