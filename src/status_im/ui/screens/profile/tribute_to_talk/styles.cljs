@@ -242,7 +242,17 @@
   {:width 24
    :height 24
    :border-radius 12
-   :background-color (if pending? colors/blue colors/green)})
+   :justify-content :center
+   :align-items :center
+   :background-color (if pending?
+                       (colors/alpha colors/black 0.1)
+                       colors/green)})
+
+(def payment-status-text
+  {:font-size 15
+   :color colors/gray
+   :margin-left 6
+   :line-height 22})
 
 (def edit-container
   {:justify-content :space-between

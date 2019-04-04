@@ -251,9 +251,12 @@
                      (assoc :on-press #(re-frame/dispatch [:tribute-to-talk.ui/on-pay-to-chat-pressed
                                                            public-key])))
         (i18n/label :t/pay-to-chat)]
-       [react/view {:style (styles/payment-status-icon (= tribute-status :pending))}
-        [icons/icon (if  (= tribute-status :pending) :tiny-icons/tiny-pending :tiny-icons/tiny-check)]
-        [react/text (tribute-to-talk/status-label tribute-status snt-amount)]])]]])
+       [react/view {:style {:flex-direction :row}}
+        [react/view {:style (styles/payment-status-icon (= tribute-status :pending))}
+         [icons/icon (if (= tribute-status :pending) :tiny-icons/tiny-pending :tiny-icons/tiny-check)
+          {:color (if (= tribute-status :pending) colors/black colors/white)}]]
+        [react/text {:style styles/payment-status-text}
+         (tribute-to-talk/status-label tribute-status snt-amount)]])]]])
 
 (defn learn-more [owner?]
   [react/view

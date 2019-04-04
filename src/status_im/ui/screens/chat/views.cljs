@@ -135,14 +135,8 @@
       [react/animated-view {:style (style/message-view-animated opacity)}
        message-view]]]))
 
-(defn empty-chat-container
-  []
-  [react/view style/empty-chat-container
-   [react/text {:style style/empty-chat-text}
-    (i18n/label :t/empty-chat-description)]])
-
 (defn empty-chat-container-one-to-one
-  [{:keys [chat-id name contact]} tribute-paid?]
+  [{:keys [chat-id name contact]} intro-name tribute-paid?]
   (let [system-tags (or (:system-tags contact) #{})
         tribute (:tribute contact)]
     [react/view
@@ -162,22 +156,20 @@
                  (not tribute-paid?))
             [react/view {:style {:align-items :center :justify-content :flex-end}}
              [photos/member-photo chat-id 120]
-             [react/nested-text {:style (assoc style/empty-chat-text :margin-top 24)}
-              [{:style (assoc style/empty-chat-text :margin-top 24)}
+             [react/nested-text {:style (assoc style/intro-header-description :margin-top 24)}
+              [{:style (assoc style/intro-header-description :margin-top 24)}
                (i18n/label :t/tribute-required-by-account {:account-name name})]
               [{:style {:color colors/blue}
                 :on-press #(re-frame/dispatch [:navigate-to :tribute-learn-more])}
                (str " " (i18n/label :learn-more))]]]
 
             :else
-            [react/view [vector-icons/icon :tiny-icons/tiny-lock]
-             [react/nested-text {:style style/empty-chat-text}
-              [{:style style/empty-chat-container-one-to-one}
-               (i18n/label :t/empty-chat-description-one-to-one)]
-              [{:style style/empty-chat-text-name} name]]])]
+            [react/nested-text {:style (merge style/intro-header-description
+                                              {:margin-bottom 36})}
+             (i18n/label :t/empty-chat-description-one-to-one)
+             [{} intro-name]])]
      (when (and (pos? tribute)
-                (not (system-tags :contact/added))
-                (not tribute-paid?))
+                (not (system-tags :contact/added)))
        [react/view {:style {:align-items :flex-start
                             :margin-top 32
                             :margin-left 8}}
@@ -187,6 +179,7 @@
           :fiat-amount "5.23"
           :fiat-currency "USD"
           :public-key chat-id
+          :style {}
           :tribute-status (tribute-to-talk/tribute-status contact)}]
         [react/view {:style style/are-you-friends-bubble}
          [react/text {:style (assoc style/are-you-friends-text :font-weight "500")}
@@ -236,7 +229,7 @@
 (defview chat-intro-header-container
   [{:keys [group-chat name pending-invite-inviter-name
            inviter-name color chat-id chat-name public?
-           universal-link]} no-messages]
+           universal-link] :as chat} no-messages tribute-paid?]
   (letsubs [intro-status [:chats/current-chat-intro-status]
             height       [:chats/content-layout-height]
             input-height [:chats/current-chat-ui-prop :input-height]]
@@ -308,10 +301,7 @@
                     [react/text {:style style/intro-header-description}
                      (i18n/label :t/created-group-chat-description
                                  {:group-name intro-name})]))))
-            [react/nested-text {:style (merge style/intro-header-description
-                                              {:margin-bottom 36})}
-             (i18n/label :t/empty-chat-description-one-to-one)
-             [{} intro-name]])]]))))
+            [empty-chat-container-one-to-one chat intro-name tribute-paid?])]]))))
 
 (defview messages-view
   [{:keys [group-chat chat-id pending-invite-inviter-name contact] :as chat}
@@ -330,7 +320,7 @@
     (let [no-messages (empty? messages)
           flat-list-conf
           {:data                      messages
-           :footer                    [chat-intro-header-container chat no-messages]
+           :footer                    [chat-intro-header-container chat no-messages tribute-paid?]
            :key-fn                    #(or (:message-id %) (:value %))
            :render-fn                 (fn [message]
                                         [message-row
