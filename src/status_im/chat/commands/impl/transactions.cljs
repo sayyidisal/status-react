@@ -314,8 +314,7 @@
                                     :public-key  public-key
                                     :from-chat?  true
                                     :symbol      symbol
-                                    :amount-text amount}
-                         :on-result [:wallet.callback/transaction-completed]}))
+                                    :amount-text amount}}))
       (let [recipient-contact     (or
                                    (get-in db [:contacts/contacts (:current-chat-id db)])
                                    (db.contact/public-key->new-contact (:current-chat-id db)))

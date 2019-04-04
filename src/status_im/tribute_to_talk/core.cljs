@@ -229,7 +229,8 @@
                                 :public-key  public-key
                                 :from-chat?  true
                                 :symbol      symbol
-                                :amount-text amount}
+                                :amount-text amount
+                                :send-transaction-message? true}
                      :on-result [:tribute-to-talk.ui/tribute-transaction-sent
                                  identity]})))
 
