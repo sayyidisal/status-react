@@ -27,7 +27,8 @@
             [status-im.models.transactions :as wallet.transactions]
             [status-im.ui.screens.navigation :as navigation]
             status-im.chat.commands.impl.transactions.subs
-            [status-im.ui.screens.wallet.utils :as wallet.utils]))
+            [status-im.ui.screens.wallet.utils :as wallet.utils]
+            [taoensso.timbre :as log]))
 
 ;; common `send/request` functionality
 
