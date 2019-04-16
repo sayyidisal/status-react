@@ -44,14 +44,16 @@
       (try
         (when-let [valid-message (protocol/validate status-message)]
           (fx/merge (assoc cofx :js-obj raw-payload :dedup-id dedup-id)
-                    #(protocol/receive valid-message
-                                       (or
-                                        filter-chat-id
-                                        (get-in valid-message [:content :chat-id])
-                                        sig)
-                                       sig
-                                       timestamp
-                                       %)))
+                    #(do
+                       (log/debug "Receiving " (prn-str valid-message))
+                       (protocol/receive valid-message
+                                         (or
+                                          filter-chat-id
+                                          (get-in valid-message [:content :chat-id])
+                                          sig)
+                                         sig
+                                         timestamp
+                                         %))))
         (catch :default e nil))))) ; ignore unknown message types
 
 (defn- js-array->seq [array]
