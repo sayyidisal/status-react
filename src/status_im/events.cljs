@@ -1919,8 +1919,9 @@
 
 (handlers/register-handler-fx
  :tribute-to-talk.callback/set-manifest-transaction-completed
- (fn [cofx [_ id result method]]
-   (navigation/navigate-to-clean cofx :wallet-transaction-sent-modal {})))
+ (fn [cofx [_ id transaction-hash method]]
+   (tribute-to-talk/on-set-manifest-transaction-completed cofx
+                                                          transaction-hash)))
 
 ;; bottom-sheet events
 (handlers/register-handler-fx

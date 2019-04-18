@@ -49,6 +49,12 @@
   [{:keys [db]} step]
   {:db (assoc-in db [:navigation/screen-params :tribute-to-talk :step] step)})
 
+(fx/defn set-step-finish
+  [{:keys [db] :as cofx}]
+  (fx/merge cofx
+            {:db (assoc-in db [:navigation/screen-params :tribute-to-talk :state] :signing)}
+            (set-step :finish)))
+
 (fx/defn open-learn-more
   [cofx]
   (set-step cofx :learn-more))
@@ -89,7 +95,7 @@
             manifest {:message message
                       :snt-amount (js/parseInt snt-amount)}]
         (fx/merge cofx
-                  (set-step :finish)
+                  (set-step-finish)
                   (accounts.update/update-settings
                    account-settings
                    {})
@@ -150,7 +156,8 @@
   (let [account-settings (get-in db [:account/account :settings])]
     (fx/merge cofx
               {:db (assoc-in db [:navigation/screen-params :tribute-to-talk]
-                             {:step :finish})}
+                             {:step :finish
+                              :state :disabled})}
               (accounts.update/update-settings
                (assoc account-settings :tribute-to-talk {:seen? true}) {}))))
 
@@ -269,3 +276,12 @@
                      :method :set-manifest
                      :params [contenthash]
                      :on-result [:tribute-to-talk.callback/set-manifest-transaction-completed]})))
+
+(fx/defn on-set-manifest-transaction-completed
+  [{:keys [db] :as cofx} transaction-hash]
+  (let [account-settings (get-in db [:account/account :settings])]
+    (fx/merge cofx
+              {:db (assoc-in db [:navigation/screen-params :tribute-to-talk :state] :pending)}
+              (navigation/navigate-to-clean :wallet-transaction-sent-modal {})
+              (accounts.update/update-settings
+               (assoc-in account-settings [:tribute-to-talk :transaction] transaction-hash) {}))))

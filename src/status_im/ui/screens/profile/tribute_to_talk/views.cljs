@@ -128,19 +128,47 @@
     (i18n/label :t/tribute-to-talk-you-can-leave-a-message)]])
 
 (defn finish
-  [snt-amount]
+  [snt-amount state]
   [react/view {:style styles/intro-container}
    [react/view {:style {:flex       1
                         :min-height 32}}]
    [react/view {:style {:justify-content :center
                         :align-items :center}}
-    [react/view {:style (styles/finish-circle (if snt-amount
-                                                colors/green-transparent-10
-                                                colors/gray-lighter) 80)}
+    [react/view {:style (styles/finish-circle
+                         (case state
+                           :completed
+                           colors/green-transparent-10
+                           :disabled
+                           colors/gray-lighter
+                           :pending
+                           colors/gray-lighter
+                           :signing
+                           colors/gray-lighter
+                           :transaction-failed
+                           colors/red-transparent-10)
+                         80)}
      [react/view {:style styles/finish-circle-with-shadow}
-      [icons/icon :main-icons/check {:color (if snt-amount
-                                              colors/green
-                                              colors/gray)}]]]]
+      (if (#{:signing :pending} state)
+        [react/activity-indicator {:animating true
+                                   :size      :large
+                                   :color colors/gray}]
+        [icons/icon (case state
+                      :completed :main-icons/check
+                      :disabled :main-icons/cancel
+                      :pending :main-icons/cancel
+                      :signing :main-icons/cancel
+                      :transaction-failed :main-icons/warning)
+         {:color (case state
+                   :completed
+                   colors/green
+                   :disabled
+                   colors/gray
+                   :pending
+                   colors/gray
+                   :signing
+                   colors/gray
+                   :transaction-failed
+                   colors/red)}])]]]
 
    [react/view {:style {:flex       1
                         :min-height 32}}]
@@ -148,17 +176,35 @@
                          :align-items     :center
                          :margin-bottom   32}}
     [react/text {:style styles/finish-label}
-     (i18n/label (if snt-amount
+     (i18n/label (case state
+                   :completed
                    :t/you-are-all-set
-                   :t/tribute-to-talk-disabled))]
-    (if snt-amount
+                   :disabled
+                   :t/tribute-to-talk-disabled
+                   :pending
+                   :t/tribute-to-talk-pending
+                   :signing
+                   :t/tribute-to-talk-signing
+                   :transaction-failed
+                   :t/transaction-failed))]
+    (case state
+      :completed
       [react/nested-text {:style (assoc styles/description-label :margin-top 16)}
        (i18n/label :t/tribute-to-talk-finish-desc)
        [{:style {:color colors/black
                  :font-weight "600"}} snt-amount]
        " SNT"]
+      :disabled
       [react/text {:style (assoc styles/description-label :margin-top 16)}
-       (i18n/label :t/tribute-to-talk-disabled-note)])]])
+       (i18n/label :t/tribute-to-talk-disabled-note)]
+      :pending
+      [react/text {:style (assoc styles/description-label :margin-top 16)}
+       (i18n/label :t/tribute-to-talk-pending-note)]
+      :signing
+      nil
+      :transaction-failed
+      [react/text {:style (assoc styles/description-label :margin-top 16)}
+       (i18n/label :t/tribute-to-talk-transaction-failed-note)])]])
 
 (defn enabled-note
   []
@@ -303,7 +349,7 @@
 
 (defview tribute-to-talk []
   (letsubs [current-account           [:account/account]
-            {:keys [step snt-amount editing? message fiat-value disabled?]}
+            {:keys [step snt-amount editing? message fiat-value disabled? state]}
             [:tribute-to-talk/ui]]
     [react/keyboard-avoiding-view {:style styles/container}
      [react/safe-area-view {:style {:flex 1}}
@@ -320,7 +366,12 @@
         (when-not (#{:edit :learn-more} step)
           [react/text {:style styles/step-n}
            (if (= step :finish)
-             (i18n/label (if snt-amount :t/completed :t/disabled))
+             (i18n/label (case state
+                           :completed :t/completed
+                           :pending :t/pending
+                           :signing :t/signing
+                           :transaction-failed :t/transaction-failed
+                           :disabled :t/disabled))
              (i18n/label :t/step-i-of-n {:step ((steps-numbers editing?) step)
                                          :number (if editing? 2 3)}))])
         (when (= step :learn-more)
@@ -333,7 +384,7 @@
         :edit                 [edit snt-amount message fiat-value]
         :learn-more           [learn-more step]
         :personalized-message [personalized-message message]
-        :finish               [finish snt-amount])
+        :finish               [finish snt-amount state])
 
       (when-not (#{:learn-more :edit} step)
         [react/view {:style styles/bottom-toolbar}

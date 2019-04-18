@@ -250,7 +250,7 @@
                        (set-chat-ui-props {:validation-messages nil}))}
               (contact-code/listen-to-chat chat-id)
               (when platform/desktop?
-                (mark-messages-seen chat-id)))))
+                (mark-messages-seen chat-id))
               (contact.core/create-contact chat-id)
               (tribute-to-talk/check-manifest chat-id))))
 
