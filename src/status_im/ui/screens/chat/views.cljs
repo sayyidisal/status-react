@@ -145,24 +145,20 @@
       (cond (and (nil? tribute) (not (system-tags :contact/added))
                  (not tribute-paid?))
             [react/view {:style {:align-items :center :justify-content :flex-end}}
-             [photos/member-photo chat-id 120]
              [react/view {:style {:flex-direction :row :justify-content :center}}
               [react/text {:style style/loading-text}
                (i18n/label :t/loading)]
               [react/activity-indicator {:color colors/gray
                                          :animating true}]]]
 
-            (and (pos? tribute) (not (system-tags :contact/added))
-                 (not tribute-paid?))
+            (and (pos? tribute) (not (system-tags :contact/added)))
             [react/view {:style {:align-items :center :justify-content :flex-end}}
-             [photos/member-photo chat-id 120]
              [react/nested-text {:style (assoc style/intro-header-description :margin-top 24)}
               [{:style (assoc style/intro-header-description :margin-top 24)}
                (i18n/label :t/tribute-required-by-account {:account-name name})]
               [{:style {:color colors/blue}
                 :on-press #(re-frame/dispatch [:navigate-to :tribute-learn-more])}
                (str " " (i18n/label :learn-more))]]]
-
             :else
             [react/nested-text {:style (merge style/intro-header-description
                                               {:margin-bottom 36})}
@@ -188,7 +184,13 @@
           (i18n/label :t/tribute-to-talk-ask-to-be-added)]
          [react/text {:style style/share-my-profile
                       :on-press #(re-frame/dispatch [:profile/share-profile-link chat-id])}
-          (i18n/label :t/share-my-profile)]]])]))
+          (i18n/label :t/share-my-profile)]]
+        (when tribute-paid?
+          [react/view
+           [react/nested-text {:style (assoc style/tribute-received-note :font-weight "500")}
+            name
+            [{:style style/tribute-received-note}
+             (i18n/label :tribute-to-talk-contact-received-your-tribute)]]])])]))
 
 (defn join-chat-button [chat-id]
   [buttons/secondary-button {:style style/join-button
@@ -229,16 +231,19 @@
 (defview chat-intro-header-container
   [{:keys [group-chat name pending-invite-inviter-name
            inviter-name color chat-id chat-name public?
+           contact
            universal-link] :as chat} no-messages tribute-paid?]
   (letsubs [intro-status [:chats/current-chat-intro-status]
             height       [:chats/content-layout-height]
             input-height [:chats/current-chat-ui-prop :input-height]]
     (let [icon-text  (if public? chat-id name)
-          intro-name (if public? chat-name name)]
+          intro-name (if public? chat-name name)
+          _ (log/warn "header" input-height pending-invite-inviter-name)]
       ;; TODO This when check ought to be unnecessary but for now it prevents
       ;; jerky motion when fresh chat is created, when input-height can be null
       ;; affecting the calculation of content-layout-height to be briefly adjusted
-      (when (or input-height pending-invite-inviter-name)
+      (when (or input-height pending-invite-inviter-name
+                (not= (:tribute contact) 0))
         [react/touchable-without-feedback
          {:style    {:flex        1
                      :align-items :flex-start}

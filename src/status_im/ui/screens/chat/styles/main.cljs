@@ -303,3 +303,8 @@
    :margin-top  11
    :line-height 22
    :font-size   15})
+
+(def tribute-received-note
+  {:font-size 13
+   :line-height 18
+   :text-align :center})
