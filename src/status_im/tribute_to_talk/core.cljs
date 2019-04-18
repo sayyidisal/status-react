@@ -269,7 +269,7 @@
       (let [confirmations (-> transactions
                               (get-in [tribute-tx-id :confirmations] 0)
                               js/parseInt)
-            paid? (<= 12 confirmations)]
+            paid? (<= 1 confirmations)]
         (when paid?
           (re-frame/dispatch [:tribute-to-talk.ui/mark-tribute-as-paid public-key]))
         paid?)))
