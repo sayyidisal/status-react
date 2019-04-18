@@ -237,8 +237,7 @@
             height       [:chats/content-layout-height]
             input-height [:chats/current-chat-ui-prop :input-height]]
     (let [icon-text  (if public? chat-id name)
-          intro-name (if public? chat-name name)
-          _ (log/warn "header" input-height pending-invite-inviter-name)]
+          intro-name (if public? chat-name name)]
       ;; TODO This when check ought to be unnecessary but for now it prevents
       ;; jerky motion when fresh chat is created, when input-height can be null
       ;; affecting the calculation of content-layout-height to be briefly adjusted
