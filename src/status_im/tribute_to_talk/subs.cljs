@@ -19,20 +19,21 @@
  :<- [:tribute-to-talk/settings]
  (fn [[{:keys [transactions]} {:keys [transaction]}]]
    (if-let [confirmations (get-in transactions [transaction :confirmations])]
-     (if (>= (js/parseInt confirmations) 12)
-       :pending
-       :completed))))
+     (if (>= (js/parseInt confirmations) 1)
+       :completed
+       :pending)
+     :signing)))
 
 (re-frame/reg-sub
  :tribute-to-talk/ui
  :<- [:tribute-to-talk/settings]
  :<- [:tribute-to-talk/screen-params]
- :<- [:tribute-to-talk/completed?]
+ :<- [:tribute-to-talk/state]
  :<- [:prices]
  :<- [:wallet/currency]
  (fn [[{:keys [snt-amount message]}
-       {:keys [step state editing?] :or {step :intro}}
-       completed? prices currency]]
+       {:keys [step editing?] :or {step :intro}}
+       state prices currency]]
    (let [fiat-value (if snt-amount
                       (money/fiat-amount-value snt-amount
                                                :SNT
@@ -47,6 +48,6 @@
       :disabled? disabled?
       :message message
       :step step
-      :state (if completed? :completed state)
+      :state state
       :editing? editing?
       :fiat-value (str "~" fiat-value " " (:code currency))})))

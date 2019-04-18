@@ -73,11 +73,10 @@
   "Add a contact and set pending to false"
   [{:keys [db] :as cofx} public-key]
   (when (not= (get-in db [:account/account :public-key]) public-key)
-    (let [contact (or
-                   (get-in db [:contacts/contacts public-key])
-                   (-> (build-contact cofx public-key)
-                       (update :system-tags
-                               (fnil #(conj % :contact/added) #{}))))]
+    (let [contact (-> (or (build-contact cofx public-key)
+                          (get-in db [:contacts/contacts public-key]))
+                      (update :system-tags
+                              (fnil #(conj % :contact/added) #{})))]
       (fx/merge cofx
                 {:db (assoc-in db [:contacts/new-identity] "")}
                 (upsert-contact contact)

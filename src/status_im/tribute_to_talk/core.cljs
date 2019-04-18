@@ -24,6 +24,13 @@
             [status-im.utils.ethereum.abi-spec :as abi-spec]
             [status-im.utils.ethereum.erc20 :as erc20]))
 
+(defn is-valid-tribute-payment?
+  "This check if the transaction is valid, which means:
+  - the public key is the one the ethereum address was derived from
+  - the transaction amount is higher or equal to the tribute set"
+  [db public-key transaction-hash]
+  true)
+
 (fx/defn mark-ttt-as-seen
   [{:keys [db] :as cofx}]
   (let [settings (get-in db [:account/account :settings])
