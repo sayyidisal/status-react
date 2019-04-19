@@ -108,11 +108,11 @@
          [message-timestamp timestamp]]]
        [react/view styles/item-lower-container
         (let [tribute-status (tribute-to-talk/tribute-status contact)]
-          (if tribute-status
-            [react/text {:style styles/last-message-text}
-             (tribute-to-talk/status-label tribute-status (:tribute contact))]
+          (if (and #{:none :paid} tribute-status last-message-content)
             [message-content-text {:content      last-message-content
-                                   :content-type last-message-content-type}]))
+                                   :content-type last-message-content-type}]
+            [react/text {:style styles/last-message-text}
+             (tribute-to-talk/status-label tribute-status (:tribute contact))]))
         [unviewed-indicator chat-id]]]]]))
 
 (defn home-list-item [[home-item-id home-item]]
