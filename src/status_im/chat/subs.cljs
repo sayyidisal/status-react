@@ -128,14 +128,19 @@
  :chats/current-chat
  :<- [:chats/active-chats]
  :<- [:chats/current-chat-id]
- (fn [[chats current-chat-id]]
-   (let [current-chat (get chats current-chat-id)
+ :<- [:wallet.transactions/transactions]
+ (fn [[chats current-chat-id transactions]]
+   (println :current-chat)
+   (let [{:keys [group-chat contact] :as current-chat}
+         (get chats current-chat-id)
          messages     (:messages current-chat)]
-     (if (empty? messages)
-       (assoc current-chat
-              :universal-link
+     (cond-> current-chat
+       (empty? messages)
+       (assoc :universal-link
               (links/generate-link :public-chat :external current-chat-id))
-       current-chat))))
+       (and (not group-chat)
+            (tribute-to-talk/tribute-paid? contact transactions))
+       (assoc :tribute-paid? true)))))
 
 (re-frame/reg-sub
  :chats/current-chat-message
@@ -305,10 +310,3 @@
  :<- [:chats/current-chat]
  (fn [{:keys [metadata messages]}]
    (get messages (get-in metadata [:responding-to-message :message-id]))))
-
-(re-frame/reg-sub
- :chats/tribute-paid?
- :<- [:chats/current-chat]
- :<- [:wallet.transactions/transactions]
- (fn [[{:keys [contact] :as chat} transactions]]
-   (tribute-to-talk/tribute-paid? contact transactions)))

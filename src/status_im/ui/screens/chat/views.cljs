@@ -308,11 +308,10 @@
             [empty-chat-container-one-to-one chat intro-name tribute-paid?])]]))))
 
 (defview messages-view
-  [{:keys [group-chat chat-id pending-invite-inviter-name contact] :as chat}
+  [{:keys [group-chat chat-id pending-invite-inviter-name contact tribute-paid?] :as chat}
    modal?]
   (letsubs [messages           [:chats/current-chat-messages-stream]
             photo-path         [:chats/photo-path chat-id]
-            tribute-paid?      [:chats/tribute-paid?]
             current-public-key [:account/public-key]]
     {:component-did-mount
      (fn [args]
@@ -351,12 +350,12 @@
            (group-chats.db/joined? my-public-key current-chat))))
 
 (defview chat-root [modal?]
-  (letsubs [{:keys [public? chat-id] :as current-chat} [:chats/current-chat]
+  (letsubs [{:keys [public? chat-id tribute-paid?] :as current-chat}
+            [:chats/current-chat]
             current-chat-id                            [:chats/current-chat-id]
             my-public-key                              [:account/public-key]
             show-bottom-info?                          [:chats/current-chat-ui-prop :show-bottom-info?]
             show-message-options?                      [:chats/current-chat-ui-prop :show-message-options?]
-            tribute-paid?                      [:chats/tribute-paid?]
             show-stickers?                             [:chats/current-chat-ui-prop :show-stickers?]]
     ;; this check of current-chat-id is necessary only because in a fresh public chat creation sometimes
     ;; this component renders before current-chat-id is set to current chat-id. Hence further down in sub
@@ -369,7 +368,7 @@
                           :style                        style/scroll-root
                           :content-container-style      style/scroll-root
                           :keyboard-should-persist-taps :handled}
-       ^{:key current-chat-id}
+       ^{:key chat-id}
        [react/view {:style     style/chat-view
                     :on-layout (fn [e]
                                  (re-frame/dispatch [:set :layout-height (-> e .-nativeEvent .-layout .-height)]))}
