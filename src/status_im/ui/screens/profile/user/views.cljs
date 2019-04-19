@@ -308,7 +308,7 @@
             scroll          (reagent/atom nil)
             active-contacts-count [:contacts/active-count]
             {tribute-to-talk-seen? :seen?
-             snt-amount :snt-amount} [:tribute-to-talk/settings]]
+             snt-amount :snt-amount} [:tribute-to-talk/ui]]
     (let [shown-account    (merge current-account changed-account)
           ;; We scroll on the component once rendered. setTimeout is necessary,
           ;; likely to allow the animation to finish.

@@ -43,7 +43,9 @@
 
 (fx/defn open-settings
   [{:keys [db] :as cofx}]
-  (let [snt-amount (get-in db [:account/account :settings :tribute-to-talk :snt-amount])]
+  (let [settings (get-in db [:account/account :settings :tribute-to-talk])
+        snt-amount (get-in settings [:update :snt-amount]
+                           (get settings :snt-amount))]
     (fx/merge cofx
               mark-ttt-as-seen
               (navigation/navigate-to-cofx :tribute-to-talk
@@ -144,12 +146,12 @@
 
 (fx/defn update-snt-amount
   [{:keys [db]} numpad-symbol]
-  {:db (update-in db [:account/account :settings :tribute-to-talk :snt-amount]
+  {:db (update-in db [:navigation/screen-params :tribute-to-talk :snt-amount]
                   #(get-new-snt-amount % numpad-symbol))})
 
 (fx/defn update-message
   [{:keys [db]} message]
-  {:db (assoc-in db [:account/account :settings :tribute-to-talk :message]
+  {:db (assoc-in db [:navigation/screen-params :tribute-to-talk :message]
                  message)})
 
 (fx/defn start-editing
@@ -172,6 +174,13 @@
   [{:keys [db] :as cofx} identity contenthash]
   (contenthash/cat cofx
                    {:contenthash contenthash
+                    :on-failure
+                    (fn [error]
+                      (re-frame/dispatch
+                       (if (= 503 error)
+                         [:tribute-to-talk.callback/fetch-manifest-failure
+                          identity contenthash]
+                         [:tribute-to-talk.callback/no-manifest-found identity])))
                     :on-success
                     (fn [manifest-json]
                       (let [manifest (js->clj (js/JSON.parse manifest-json)
@@ -201,14 +210,6 @@
 (fx/defn check-own-manifest
   [cofx]
   (check-manifest cofx (get-in cofx [:db :account/account :public-key])))
-
-(fx/defn update-tribute-to-talk-settings
-  [cofx manifest]
-  (let [account-settings (get-in db [:account/account :settings])]
-    (fx/merge cofx
-              {:db (assoc-in db [:navigation/screen-params :tribute-to-talk :state] :complete)}
-              (accounts.update/update-settings
-               (assoc account-settings [:tribute-to-talk] manifest) {}))))
 
 (fx/defn mark-tribute-as-paid
   [{:keys [db] :as cofx} identity]
@@ -296,14 +297,86 @@
                     {:contract :status/tribute-to-talk
                      :method :set-manifest
                      :params [contenthash]
-                     :on-result [:tribute-to-talk.callback/set-manifest-transaction-completed]})))
+                     :on-result [:tribute-to-talk.callback/set-manifest-transaction-completed]
+                     :on-error [:tribute-to-talk.callback/set-manifest-transaction-failed]})))
+
+(fx/defn check-set-manifest-transaction
+  [{:keys [db] :as cofx}]
+  (let [account-settings (get-in cofx [:db :account/account :settings])
+        transaction (get-in account-settings
+                            [:tribute-to-talk :update :transaction])]
+    (when transaction
+      (let [confirmed? (pos? (js/parseInt
+                              (get-in cofx [:db :wallet :transactions
+                                            transaction :confirmations]
+                                      0)))
+            ;;TODO support failed transactions
+            failed? false]
+        (println confirmed?)
+        (cond
+          failed?
+          (fx/merge cofx
+                    {:db (assoc-in db [:navigation/screen-params :tribute-to-talk :state] :transaction-failed)}
+                    (accounts.update/update-settings
+                     (update account-settings :tribute-to-talk
+                             dissoc :update) {}))
+
+          confirmed?
+          (fx/merge cofx
+                    {:db (assoc-in db [:navigation/screen-params :tribute-to-talk :state] :completed)}
+                    check-own-manifest
+                    (accounts.update/update-settings
+                     (update account-settings :tribute-to-talk
+                             dissoc :update) {}))
+
+          (not confirmed?)
+          {:dispatch-later [{:ms       10000
+                             :dispatch [:tribute-to-talk/check-set-manifest-transaction-timeout]}]})))))
 
 (fx/defn on-set-manifest-transaction-completed
   [{:keys [db] :as cofx} transaction-hash]
-  (let [account-settings (get-in db [:account/account :settings])]
+  (let [account-settings (get-in db [:account/account :settings])
+        {:keys [snt-amount message]} (get-in db [:navigation/screen-params
+                                                 :tribute-to-talk])]
     (fx/merge cofx
               {:db (assoc-in db [:navigation/screen-params :tribute-to-talk :state] :pending)}
               (navigation/navigate-to-clean :wallet-transaction-sent-modal {})
               (accounts.update/update-settings
                (assoc-in account-settings
-                         [:tribute-to-talk :update] {:transaction transaction-hash}) {}))))
+                         [:tribute-to-talk :update]
+                         {:transaction transaction-hash
+                          :snt-amount  snt-amount
+                          :message     message}) {})
+              check-set-manifest-transaction)))
+
+(fx/defn on-set-manifest-transaction-failed
+  [{:keys [db] :as cofx} error]
+  {:db (assoc-in db
+                 [:navigation/screen-params :tribute-to-talk :state]
+                 :transaction-failed)})
+
+(fx/defn update-tribute-to-talk-settings
+  [{:keys [db] :as cofx} {:keys [snt-amount message] :as manifest}]
+  (let [account-settings (get-in db [:account/account :settings])]
+    (fx/merge cofx
+              {:db  (update-in db [:navigation/screen-params :tribute-to-talk]
+                               merge
+                               {:snt-amount snt-amount
+                                :message message})}
+              (when (get-in account-settings [:tribute-to-talk :update])
+                check-set-manifest-transaction)
+              (accounts.update/update-settings
+               (if manifest
+                 (-> account-settings
+                     (assoc-in [:tribute-to-talk :seen?] true)
+                     (assoc-in [:tribute-to-talk :snt-amount] snt-amount)
+                     (assoc-in [:tribute-to-talk :message] message))
+                 (-> account-settings
+                     (update :tribute-to-talk dissoc :snt-amount)
+                     (update :tribute-to-talk dissoc :message))) {}))))
+
+(fx/defn init
+  [cofx]
+  (fx/merge cofx
+            check-own-manifest
+            check-set-manifest-transaction))

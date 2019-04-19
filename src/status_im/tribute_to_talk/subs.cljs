@@ -14,26 +14,16 @@
    (get-in db [:navigation/screen-params :tribute-to-talk])))
 
 (re-frame/reg-sub
- :tribute-to-talk/state
- :<- [:wallet]
- :<- [:tribute-to-talk/settings]
- (fn [[{:keys [transactions]} {:keys [transaction]}]]
-   (if-let [confirmations (get-in transactions [transaction :confirmations])]
-     (if (>= (js/parseInt confirmations) 1)
-       :completed
-       :pending)
-     :signing)))
-
-(re-frame/reg-sub
  :tribute-to-talk/ui
  :<- [:tribute-to-talk/settings]
  :<- [:tribute-to-talk/screen-params]
- :<- [:tribute-to-talk/state]
  :<- [:prices]
  :<- [:wallet/currency]
- (fn [[{:keys [snt-amount message]}
-       {:keys [step editing?] :or {step :intro}}
-       state prices currency]]
+ (fn [[{:keys [seen? snt-amount message update]}
+       {:keys [step editing? state error]
+        :or {step :intro}
+        screen-snt-amount :snt-amount
+        screen-message :message} prices currency]]
    (let [fiat-value (if snt-amount
                       (money/fiat-amount-value snt-amount
                                                :SNT
@@ -44,9 +34,15 @@
                         (or (string/blank? snt-amount)
                             (= "0" snt-amount)
                             (string/ends-with? snt-amount ".")))]
-     {:snt-amount snt-amount
+     {:seen? seen?
+      :snt-amount (str (or screen-snt-amount
+                           (:snt-amount update)
+                           snt-amount))
       :disabled? disabled?
-      :message message
+      :message (or screen-message
+                   (:message update)
+                   message)
+      :error error
       :step step
       :state state
       :editing? editing?

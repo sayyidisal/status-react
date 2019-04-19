@@ -1888,8 +1888,9 @@
 (handlers/register-handler-fx
  :tribute-to-talk.callback/no-manifest-found
  (fn [cofx  [_ identity]]
-   (when-let [not-me? (not= identity
-                            (get-in cofx [:db :account/account :public-key]))]
+   (if-let [me? (= identity
+                   (get-in cofx [:db :account/account :public-key]))]
+     (tribute-to-talk/update-tribute-to-talk-settings cofx nil)
      (contact/set-tribute cofx identity nil))))
 
 (handlers/register-handler-fx
@@ -1897,8 +1898,13 @@
  (fn [cofx  [_ identity manifest]]
    (if-let [me? (= identity
                    (get-in cofx [:db :account/account :public-key]))]
-     (tribute-to-talk/update-tribute-to-talk-settings manifest)
+     (tribute-to-talk/update-tribute-to-talk-settings cofx manifest)
      (contact/set-tribute cofx identity manifest))))
+
+(handlers/register-handler-fx
+ :tribute-to-talk.callback/fetch-manifest-failure
+ (fn [cofx  [_ identity contenthash]]
+   (tribute-to-talk/fetch-manifest cofx identity contenthash)))
 
 (handlers/register-handler-fx
  :tribute-to-talk.ui/mark-tribute-as-paid
@@ -1927,6 +1933,17 @@
  (fn [cofx [_ id transaction-hash method]]
    (tribute-to-talk/on-set-manifest-transaction-completed cofx
                                                           transaction-hash)))
+
+(handlers/register-handler-fx
+ :tribute-to-talk.callback/set-manifest-transaction-failed
+ (fn [cofx [_ error]]
+   (tribute-to-talk/on-set-manifest-transaction-failed cofx
+                                                       error)))
+
+(handlers/register-handler-fx
+ :tribute-to-talk/check-set-manifest-transaction-timeout
+ (fn [cofx _]
+   (tribute-to-talk/check-set-manifest-transaction cofx)))
 
 ;; bottom-sheet events
 (handlers/register-handler-fx
