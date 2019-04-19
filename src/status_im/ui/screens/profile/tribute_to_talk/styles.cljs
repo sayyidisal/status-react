@@ -224,12 +224,11 @@
   {:background-color   colors/blue-light
    :padding-horizontal 12
    :padding-top        8
-   :width              222
    :margin-top         4
    :border-radius      8})
 
 (def pay-to-chat-container
-  {:justify-content :center
+  {:justify-content :flex-start
    :align-items     :center
    :flex-direction  :row
    :height          44})

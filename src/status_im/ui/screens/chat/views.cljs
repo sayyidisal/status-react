@@ -187,9 +187,9 @@
           (i18n/label :t/share-my-profile)]]
         (when tribute-paid?
           [react/view
-           [react/nested-text {:style (assoc style/tribute-received-note :font-weight "500")}
-            name
-            [{:style style/tribute-received-note}
+           [react/nested-text {:style style/tribute-received-note}
+            [{:style (assoc style/tribute-received-note :font-weight "500")} name]
+            [{:style (assoc style/tribute-received-note :color colors/gray)}
              (i18n/label :tribute-to-talk-contact-received-your-tribute)]]])])]))
 
 (defn join-chat-button [chat-id]

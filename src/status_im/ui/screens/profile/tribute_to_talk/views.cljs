@@ -281,7 +281,7 @@
    (when-not (string/blank? personalized-message)
      [react/view {:style styles/chat-sample-bubble}
       [react/text (i18n/label :t/tribute-to-talk-sample-text)]])
-   [react/view {:style (assoc styles/chat-sample-bubble :width 141)}
+   [react/view {:style styles/chat-sample-bubble}
     ;;TODO replace hardcoded values
     [react/nested-text {:style {:font-size 22}}
      (str snt-amount)
