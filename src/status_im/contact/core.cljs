@@ -165,5 +165,6 @@
   [{:keys [db] :as cofx} identity {:keys [snt-amount message]
                                    :or   {snt-amount 0
                                           message ""}}]
-  {:db (assoc-in db [:contacts/contacts identity :tribute] (js/parseInt snt-amount))
-   :data-store/tx [(contacts-store/set-tribute-tx identity (js/parseInt snt-amount))]})
+  (let [snt-amount (js/parseInt snt-amount)]
+    {:db (assoc-in db [:contacts/contacts identity :tribute] snt-amount)
+     :data-store/tx [(contacts-store/set-tribute-tx identity snt-amount)]}))

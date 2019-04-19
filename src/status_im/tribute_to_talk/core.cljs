@@ -173,11 +173,12 @@
   (contenthash/cat cofx
                    {:contenthash contenthash
                     :on-success
-                    (fn [manifest]
-                      (re-frame/dispatch
-                       [:tribute-to-talk.callback/fetch-manifest-success
-                        identity (js->clj (js/JSON.parse manifest)
-                                          :keywordize-keys true)]))}))
+                    (fn [manifest-json]
+                      (let [manifest (js->clj (js/JSON.parse manifest-json)
+                                              :keywordize-keys true)]
+                        (re-frame/dispatch
+                         [:tribute-to-talk.callback/fetch-manifest-success
+                          identity manifest])))}))
 
 (fx/defn check-manifest
   [{:keys [db] :as cofx} identity]
@@ -193,8 +194,21 @@
                      #(re-frame/dispatch
                        (if-let [contenthash (first %)]
                          [:tribute-to-talk.callback/check-manifest-success
-                          identity contenthash]
+                          identity
+                          contenthash]
                          [:tribute-to-talk.callback/no-manifest-found identity]))})))
+
+(fx/defn check-own-manifest
+  [cofx]
+  (check-manifest cofx (get-in cofx [:db :account/account :public-key])))
+
+(fx/defn update-tribute-to-talk-settings
+  [cofx manifest]
+  (let [account-settings (get-in db [:account/account :settings])]
+    (fx/merge cofx
+              {:db (assoc-in db [:navigation/screen-params :tribute-to-talk :state] :complete)}
+              (accounts.update/update-settings
+               (assoc account-settings [:tribute-to-talk] manifest) {}))))
 
 (fx/defn mark-tribute-as-paid
   [{:keys [db] :as cofx} identity]
@@ -291,4 +305,5 @@
               {:db (assoc-in db [:navigation/screen-params :tribute-to-talk :state] :pending)}
               (navigation/navigate-to-clean :wallet-transaction-sent-modal {})
               (accounts.update/update-settings
-               (assoc-in account-settings [:tribute-to-talk :transaction] transaction-hash) {}))))
+               (assoc-in account-settings
+                         [:tribute-to-talk :update] {:transaction transaction-hash}) {}))))

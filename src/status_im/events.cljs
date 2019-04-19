@@ -1888,12 +1888,17 @@
 (handlers/register-handler-fx
  :tribute-to-talk.callback/no-manifest-found
  (fn [cofx  [_ identity]]
-   (contact/set-tribute cofx identity {:tribute 0 :message ""})))
+   (when-let [not-me? (not= identity
+                            (get-in cofx [:db :account/account :public-key]))]
+     (contact/set-tribute cofx identity nil))))
 
 (handlers/register-handler-fx
  :tribute-to-talk.callback/fetch-manifest-success
  (fn [cofx  [_ identity manifest]]
-   (contact/set-tribute cofx identity manifest)))
+   (if-let [me? (= identity
+                   (get-in cofx [:db :account/account :public-key]))]
+     (tribute-to-talk/update-tribute-to-talk-settings manifest)
+     (contact/set-tribute cofx identity manifest))))
 
 (handlers/register-handler-fx
  :tribute-to-talk.ui/mark-tribute-as-paid
