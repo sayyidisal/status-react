@@ -92,10 +92,7 @@
              :utils/show-confirmation {:title               nil
                                        :content             (i18n/label :t/keycard-has-account-on-it)
                                        :cancel-button-text  ""
-                                       :confirm-button-text :t/okay}}
-            (if (empty? (:accounts/accounts db))
-              (navigation/navigate-to-cofx :intro nil)
-              (navigation/navigate-to-cofx :accounts nil))))
+                                       :confirm-button-text :t/okay}}))
 
 (defn- card-state->setup-step [state]
   (case state
