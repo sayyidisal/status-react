@@ -1925,8 +1925,8 @@
 
 (handlers/register-handler-fx
  :tribute-to-talk.callback/manifest-uploaded
- (fn [cofx [_ manifest hash]]
-   (tribute-to-talk/set-manifest-signing-flow cofx manifest hash)))
+ (fn [cofx [_ hash]]
+   (tribute-to-talk/set-manifest-signing-flow cofx hash)))
 
 (handlers/register-handler-fx
  :tribute-to-talk.callback/set-manifest-transaction-completed

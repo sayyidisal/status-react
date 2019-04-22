@@ -113,21 +113,19 @@
       (set-step cofx :personalized-message)
 
       :personalized-message
-      (let [account-settings (get-in cofx [:db :account/account :settings])
-            {:keys [message snt-amount]} (:tribute-to-talk account-settings)
-            manifest {:message message
-                      :snt-amount (js/parseInt snt-amount)}]
+      (let [{:keys [message snt-amount]}
+            (get-in cofx [:db :navigation/screen-params :tribute-to-talk])
+            manifest
+            {:message message
+             :snt-amount (js/parseInt snt-amount)}]
         (fx/merge cofx
                   (set-step-finish)
-                  (accounts.update/update-settings
-                   account-settings
-                   {})
                   (ipfs/add {:value (js/JSON.stringify
                                      (clj->js manifest))
                              :on-success
                              (fn [response]
                                [:tribute-to-talk.callback/manifest-uploaded
-                                manifest (:hash response)])})))
+                                (:hash response)])})))
 
       :finish
       (navigation/navigate-back cofx))))
@@ -173,15 +171,6 @@
   {:db (assoc-in db [:navigation/screen-params :tribute-to-talk]
                  {:step :set-snt-amount
                   :editing? true})})
-
-(defn remove
-  [{:keys [db] :as cofx}]
-  (let [account-settings (get-in db [:account/account :settings])]
-    (fx/merge cofx
-              {:db (assoc-in db [:navigation/screen-params :tribute-to-talk]
-                             {:step :finish
-                              :state :disabled})}
-              (update-settings nil))))
 
 (fx/defn fetch-manifest
   [{:keys [db] :as cofx} identity contenthash]
@@ -307,9 +296,10 @@
         paid?)))
 
 (fx/defn set-manifest-signing-flow
-  [{:keys [db] :as cofx} manifest hash]
-  (let [contenthash (contenthash/encode {:hash hash
-                                         :namespace :ipfs})]
+  [{:keys [db] :as cofx} hash]
+  (let [contenthash (when hash
+                      (contenthash/encode {:hash hash
+                                           :namespace :ipfs}))]
     (or (contracts/call cofx
                         {:contract :status/tribute-to-talk
                          :method :set-manifest
@@ -317,6 +307,14 @@
                          :on-result [:tribute-to-talk.callback/set-manifest-transaction-completed]
                          :on-error [:tribute-to-talk.callback/set-manifest-transaction-failed]})
         {:db (assoc-in db [:navigation/screen-params :tribute-to-talk :state] :transaction-failed)})))
+
+(defn remove
+  [{:keys [db] :as cofx}]
+  (fx/merge cofx
+            {:db (assoc-in db [:navigation/screen-params :tribute-to-talk]
+                           {:step :finish
+                            :state :disabled})}
+            (set-manifest-signing-flow nil)))
 
 (fx/defn check-set-manifest-transaction
   [{:keys [db] :as cofx}]
@@ -347,8 +345,7 @@
 
 (fx/defn on-set-manifest-transaction-completed
   [{:keys [db] :as cofx} transaction-hash]
-  (let [account-settings (get-in db [:account/account :settings])
-        {:keys [snt-amount message]} (get-in db [:navigation/screen-params
+  (let [{:keys [snt-amount message]} (get-in db [:navigation/screen-params
                                                  :tribute-to-talk])]
     (fx/merge cofx
               {:db (assoc-in db [:navigation/screen-params :tribute-to-talk :state] :pending)}

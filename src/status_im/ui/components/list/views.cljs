@@ -136,7 +136,8 @@
       [react/image {:source {:uri image-source}
                     :style   styles/big-item-image}]
       activity-indicator
-      [react/activity-indicator activity-indicator])
+      [react/view (styles/settings-item-icon icon-color subtext)
+       [react/activity-indicator activity-indicator]])
     (if subtext
       [react/view {:style styles/settings-item-text-container}
        [react/view {:style styles/settings-item-main-text-container}
