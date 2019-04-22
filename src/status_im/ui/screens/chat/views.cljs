@@ -172,8 +172,6 @@
         ;; TODO Fiat value still hardcoded
         [tribute-to-talk.views/pay-to-chat-message
          {:snt-amount tribute
-          :fiat-amount "5.23"
-          :fiat-currency "USD"
           :public-key chat-id
           :style {}
           :tribute-status (tribute-to-talk/tribute-status contact)}]
