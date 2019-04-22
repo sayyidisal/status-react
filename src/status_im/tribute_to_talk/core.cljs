@@ -26,7 +26,7 @@
             [status-im.utils.ethereum.erc20 :as erc20]))
 
 (fx/defn update-settings
-  [{:keys [db] :as cofx} {:keys [snt-amount message] :as new-settings}]
+  [{:keys [db] :as cofx} {:keys [snt-amount message update] :as new-settings}]
   (let [account-settings (get-in db [:account/account :settings])
         chain-keyword    (-> (get-in db [:account/account :networks (:network db)])
                              ethereum/network->chain-keyword)
@@ -58,15 +58,20 @@
 (fx/defn open-settings
   [{:keys [db] :as cofx}]
   (let [settings (tribute-to-talk.db/get-settings db)
-        snt-amount (get-in settings [:update :snt-amount]
-                           (get settings :snt-amount))]
+        updated-settings (:update settings)]
     (fx/merge cofx
               mark-ttt-as-seen
-              (navigation/navigate-to-cofx :tribute-to-talk
-                                           (if snt-amount
-                                             {:step :edit
-                                              :editing? true}
-                                             {:step :intro})))))
+              (navigation/navigate-to-cofx
+               :tribute-to-talk
+               (if (or (:snt-amount settings)
+                       (:snt-amount updated-settings))
+                 (merge {:step :edit
+                         :editing? true}
+                        settings
+                        updated-settings
+                        (when updated-settings
+                          {:state :pending}))
+                 {:step :intro})))))
 
 (fx/defn set-step
   [{:keys [db]} step]
@@ -134,7 +139,7 @@
   [snt-amount numpad-symbol]
   ;; TODO: Put some logic in place so that incorrect numbers can not
   ;; be entered
-  (let [snt-amount  (or snt-amount "0")]
+  (let [snt-amount  (or (str snt-amount) "0")]
     (if (= numpad-symbol :remove)
       (let [len (count snt-amount)
             s (subs snt-amount 0 (dec len))]
@@ -158,19 +163,21 @@
 
 (fx/defn update-snt-amount
   [{:keys [db]} numpad-symbol]
-  {:db (update-in db [:navigation/screen-params :tribute-to-talk :snt-amount]
+  {:db (update-in db
+                  [:navigation/screen-params :tribute-to-talk :snt-amount]
                   #(get-new-snt-amount % numpad-symbol))})
 
 (fx/defn update-message
   [{:keys [db]} message]
-  {:db (assoc-in db [:navigation/screen-params :tribute-to-talk :message]
+  {:db (assoc-in db
+                 [:navigation/screen-params :tribute-to-talk :message]
                  message)})
 
 (fx/defn start-editing
   [{:keys [db]}]
-  {:db (assoc-in db [:navigation/screen-params :tribute-to-talk]
-                 {:step :set-snt-amount
-                  :editing? true})})
+  {:db (assoc-in db
+                 [:navigation/screen-params :tribute-to-talk :step]
+                 :set-snt-amount)})
 
 (fx/defn fetch-manifest
   [{:keys [db] :as cofx} identity contenthash]
