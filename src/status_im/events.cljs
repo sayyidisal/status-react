@@ -1890,7 +1890,7 @@
  (fn [cofx  [_ identity]]
    (if-let [me? (= identity
                    (get-in cofx [:db :account/account :public-key]))]
-     (tribute-to-talk/update-tribute-to-talk-settings cofx nil)
+     (tribute-to-talk/update-settings cofx nil)
      (contact/set-tribute cofx identity nil))))
 
 (handlers/register-handler-fx
@@ -1898,7 +1898,7 @@
  (fn [cofx  [_ identity manifest]]
    (if-let [me? (= identity
                    (get-in cofx [:db :account/account :public-key]))]
-     (tribute-to-talk/update-tribute-to-talk-settings cofx manifest)
+     (tribute-to-talk/update-settings cofx manifest)
      (contact/set-tribute cofx identity manifest))))
 
 (handlers/register-handler-fx

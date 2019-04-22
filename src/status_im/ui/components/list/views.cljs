@@ -112,14 +112,14 @@
 
 (defn big-list-item
   [{:keys [style text text-color subtext value action-fn active? destructive? hide-chevron?
-           accessory-value text-color new?
+           accessory-value text-color new? activity-indicator
            accessibility-label icon icon-color image-source icon-content]
     :or   {icon-color colors/blue
            text-color colors/black
            value ""
            active? true
            style {}}}]
-  {:pre [(or icon image-source)
+  {:pre [(or icon image-source activity-indicator)
          (and action-fn text)
          (or (nil? accessibility-label) (keyword? accessibility-label))]}
   [react/touchable-highlight
@@ -128,11 +128,15 @@
     :accessibility-label accessibility-label
     :disabled (not active?)}
    [react/view (styles/settings-item subtext)
-    (if icon
+    (cond
+      icon
       [react/view (styles/settings-item-icon icon-color subtext)
        [vector-icons/icon icon {:color icon-color}]]
+      image-source
       [react/image {:source {:uri image-source}
-                    :style   styles/big-item-image}])
+                    :style   styles/big-item-image}]
+      activity-indicator
+      [react/activity-indicator activity-indicator])
     (if subtext
       [react/view {:style styles/settings-item-text-container}
        [react/view {:style styles/settings-item-main-text-container}

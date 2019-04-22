@@ -914,6 +914,8 @@
     "tribute-to-talk-set-snt-amount": "Set the amount of SNT required for new people to start a chat",
     "personalized-message": "Personalized message",
     "optional": "optional",
+    "pending-confirmation": "Pending confirmation...",
+    "waiting-to-sign": "Waiting to sign transaction...",
     "tribute-to-talk-message-placeholder": "Hi there, I ask you to pay tribute to start a chat with me. If you know me in real life, you know how to find me...",
     "tribute-to-talk-you-can-leave-a-message": "You can leave a message for people to see when they want to start a chat with you.",
     "tribute-to-talk-sign-and-set-tribute": "Sign and set tribute",

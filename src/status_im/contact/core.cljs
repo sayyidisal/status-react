@@ -18,13 +18,14 @@
             [status-im.utils.fx :as fx]
             [status-im.utils.utils :as utils]
             [status-im.transport.partitioned-topic :as transport.topic]
+            [status-im.tribute-to-talk.db :as tribute-to-talk]
             [status-im.utils.config :as config]))
 
 (fx/defn load-contacts
   [{:keys [db all-contacts]}]
   (let [contacts-list (map #(vector (:public-key %) %) all-contacts)
         contacts (into {} contacts-list)
-        tr-to-talk-enabled? (get-in db  [:account/account :settings :tribute-to-talk :snt-amount])]
+        tr-to-talk-enabled? (tribute-to-talk/enabled? db)]
     {:db (cond-> (-> db
                      (update :contacts/contacts #(merge contacts %))
                      (assoc :contacts/blocked (contact.db/get-blocked-contacts all-contacts)))

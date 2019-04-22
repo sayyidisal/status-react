@@ -8,6 +8,7 @@
             [status-im.transport.utils :as transport.utils]
             [status-im.transport.partitioned-topic :as transport.topic]
             [status-im.utils.config :as config]
+            [status-im.tribute-to-talk.db :as tribute-to-talk]
             [status-im.utils.fx :as fx]
             [taoensso.timbre :as log]))
 
@@ -97,7 +98,7 @@
                                              whisper-opts)}]})))))
 
 (defn filter-message [{:keys [db] :as cofx} message-type tribute-tx-id from]
-  (let [ttt-enabled? (get-in db  [:account/account :settings :tribute-to-talk :snt-amount])
+  (let [ttt-enabled? (tribute-to-talk/enabled? db)
         contact (get-in db [:contacts/contacts from])]
     (or (not= :user-message message-type)
         (not ttt-enabled?)

@@ -155,10 +155,9 @@
         [icons/icon (case state
                       :completed :main-icons/check
                       :disabled :main-icons/cancel
-                      :pending :main-icons/cancel
-                      :signing :main-icons/cancel
                       :transaction-failed :main-icons/warning)
-         {:color (case state
+         {:width 48 :height 48
+          :color (case state
                    :completed
                    colors/green
                    :disabled
