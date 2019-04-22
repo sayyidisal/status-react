@@ -183,12 +183,51 @@
   [text _ message]
   [message-content-status text message])
 
+(views/defview gap [{:keys [ids]}]
+  (views/letsubs [in-progress? [:chats/fetching-gap-in-progress? ids]
+                  connected?   [:mailserver/connected?]]
+    [react/view {:style {:align-self          :stretch
+                         :margin-top          24
+                         :margin-bottom       24
+                         :height              48
+                         :align-items         :center
+                         :justify-content     :center
+                         :border-color        colors/gray-light
+                         :border-top-width    1
+                         :border-bottom-width 1
+                         :background-color    :white}}
+     [react/touchable-highlight
+      {:on-press (when (and connected? (not in-progress?))
+                   #(re-frame/dispatch [:chat.ui/fill-gaps ids]))}
+      [react/view {:style {:flex            1
+                           :align-items     :center
+                           :justify-content :center}}
+       (if in-progress?
+         [react/activity-indicator]
+         [react/view
+          {:style {:height          18
+                   :width           200
+                   :align-items     :center
+                   :justify-content :center}}
+          [react/text
+           {:style {:color (if connected?
+                             colors/blue
+                             colors/gray)}}
+           (i18n/label :t/fetch-messages)]])]]]))
+
 (defmethod message :default
   [text me? {:keys [message-id chat-id message-status user-statuses from
                     current-public-key content-type outgoing type value] :as message}]
-  (if (= type :datemark)
+  (cond
+    (= type :datemark)
     ^{:key (str "datemark" message-id)}
     [message.datemark/chat-datemark value]
+
+    (= type :gap)
+    ^{:key (str "gap" value)}
+    [gap (:gaps message)]
+
+    :else
     (when (contains? constants/desktop-content-types content-type)
       (reagent.core/create-class
        {:component-did-mount
